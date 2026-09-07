@@ -16,14 +16,20 @@ class AmmeterEmulatorBase(ABC):
         The server will run indefinitely, handling one client request at a time.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', self.port))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('127.0.0.1', self.port))
             s.listen()
             print(f"{self.__class__.__name__} is running on port {self.port}")
             while True:
                 conn, addr = s.accept()
                 with conn:
+                    conn.settimeout(5.0)
                     print(f"Connected by {addr}")
-                    data = conn.recv(1024)
+                    try:
+                        data = conn.recv(1024)
+                    except socket.timeout:
+                        print(f"Timed out waiting for a command from {addr}")
+                        continue
                     if data == self.get_current_command:
                         # Call the specific measure_current() method defined in subclasses
                         current = self.measure_current()
