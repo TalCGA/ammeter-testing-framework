@@ -1,3 +1,4 @@
+import argparse
 import sys
 import threading
 import time
@@ -12,11 +13,18 @@ from Ammeters.Entes_Ammeter import EntesAmmeter
 from Ammeters.Greenlee_Ammeter import GreenleeAmmeter
 from src.testing.test_framework import AmmeterTestFramework
 
+_EMULATOR_CLASSES = {
+    "greenlee": GreenleeAmmeter,
+    "entes": EntesAmmeter,
+    "circutor": CircutorAmmeter,
+}
 
-def start_emulators() -> None:
-    threading.Thread(target=lambda: GreenleeAmmeter(5000).start_server(), daemon=True).start()
-    threading.Thread(target=lambda: EntesAmmeter(5001).start_server(), daemon=True).start()
-    threading.Thread(target=lambda: CircutorAmmeter(5002).start_server(), daemon=True).start()
+
+def start_emulators(ammeters: dict) -> None:
+    for name, spec in ammeters.items():
+        cls = _EMULATOR_CLASSES[name]
+        port = spec["port"]
+        threading.Thread(target=lambda c=cls, p=port: c(p).start_server(), daemon=True).start()
     time.sleep(2)
 
 
@@ -67,9 +75,28 @@ def print_summary(report: dict) -> None:
         )
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the ammeter sampling session.")
+    parser.add_argument(
+        "--config",
+        default="config/config.yaml",
+        help="Path to YAML config (default: config/config.yaml)",
+    )
+    parser.add_argument(
+        "--no-plot",
+        action="store_true",
+        help="Skip matplotlib PNG generation for this session.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    start_emulators()
-    framework = AmmeterTestFramework()
+    args = parse_args()
+    framework = AmmeterTestFramework(
+        config_path=args.config,
+        enable_plot=False if args.no_plot else None,
+    )
+    start_emulators(framework.config["ammeters"])
     report = framework.run_session(["greenlee", "entes", "circutor"])
     print_summary(report)
 

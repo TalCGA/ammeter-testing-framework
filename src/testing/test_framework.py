@@ -13,8 +13,13 @@ from src.utils.paths import dated_subdirectory, resolve_base_dir
 class AmmeterTestFramework:
     """Orchestrates sampling, analysis, and a single session archive."""
 
-    def __init__(self, config_path: str = "config/config.yaml"):
+    def __init__(
+        self,
+        config_path: str = "config/config.yaml",
+        enable_plot: Optional[bool] = None,
+    ):
         self.config = load_config(config_path)
+        self.enable_plot = enable_plot
         result_dirs = self.config.get("result_management", {})
         logs_base = resolve_base_dir(result_dirs.get("logs_directory"), "results/logs")
         self.logger = setup_logging(log_dir=str(dated_subdirectory(logs_base)))
@@ -114,8 +119,10 @@ class AmmeterTestFramework:
 
     def _maybe_plot(self) -> Optional[str]:
         visualization_cfg = (self.config.get("analysis") or {}).get("visualization") or {}
-        if visualization_cfg.get("enabled") is False:
-            self.logger.info("Visualization disabled in config; skipping plot.")
+        if self.enable_plot is False or (
+            self.enable_plot is None and visualization_cfg.get("enabled") is False
+        ):
+            self.logger.info("Visualization disabled; skipping plot.")
             return None
         if self.archiver.plots_dir is None or self.archiver.started_utc is None:
             return None
