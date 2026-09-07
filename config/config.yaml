@@ -1,8 +1,8 @@
 testing:
   sampling:
-    measurements_count: NULL
-    total_duration_seconds: NULL
-    sampling_frequency_hz: NULL
+    measurements_count: 10
+    total_duration_seconds: 5
+    sampling_frequency_hz: 2
 
 ammeters:
   greenlee:
@@ -17,8 +17,16 @@ ammeters:
 
 analysis:
   statistical_metrics:
+    - mean
+    - median
+    - std_dev
+    - min
+    - max
   visualization:
-    enabled: true
+    enabled: false
     plot_types:
 
 result_management:
+  runs_directory: results/runs
+  logs_directory: results/logs
+  plots_directory: results/plots
