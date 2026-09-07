@@ -4,6 +4,7 @@ from src.testing.ammeter_client import AmmeterClient
 from src.testing.analysis import AnalysisEngine
 from src.testing.archive import ResultArchiver
 from src.testing.sampling import SamplingEngine
+from src.testing.visualization import VisualizationError, plot_current_timeseries
 from src.utils.config import load_config
 from src.utils.logger import setup_logging
 from src.utils.paths import dated_subdirectory, resolve_base_dir
@@ -105,6 +106,28 @@ class AmmeterTestFramework:
                     error=str(exc),
                 )
 
-        report = self.archiver.save_session()
+        comparison = self.analysis_engine.compare_devices(self.archiver.devices)
+        plot_path = self._maybe_plot()
+        report = self.archiver.save_session(comparison=comparison, plot_path=plot_path)
         self.logger.info("Archived session report to %s", report["archive_path"])
         return report
+
+    def _maybe_plot(self) -> Optional[str]:
+        visualization_cfg = (self.config.get("analysis") or {}).get("visualization") or {}
+        if visualization_cfg.get("enabled") is False:
+            self.logger.info("Visualization disabled in config; skipping plot.")
+            return None
+        if self.archiver.plots_dir is None or self.archiver.started_utc is None:
+            return None
+
+        timestamp = self.archiver.started_utc.strftime("%Y%m%dT%H%M%SZ")
+        output_path = self.archiver.plots_dir / f"run_{timestamp}_plot.png"
+        try:
+            return plot_current_timeseries(
+                devices=self.archiver.devices,
+                output_path=output_path,
+                title=f"Ammeter current samples ({self.archiver.session_id})",
+            )
+        except VisualizationError as exc:
+            self.logger.error("Could not generate plot: %s", exc)
+            return None

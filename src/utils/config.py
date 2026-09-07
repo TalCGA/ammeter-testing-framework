@@ -60,6 +60,7 @@ def _validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
         raise ConfigError("Expected 'result_management' to be a mapping.")
     result_management.setdefault("runs_directory", "results/runs")
     result_management.setdefault("logs_directory", "results/logs")
+    result_management.setdefault("plots_directory", "results/plots")
     config["result_management"] = result_management
     return config
 

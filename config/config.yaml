@@ -23,8 +23,9 @@ analysis:
     - min
     - max
   visualization:
-    enabled: false
+    enabled: true
     plot_types:
+      - timeseries
 
 result_management:
   runs_directory: results/runs

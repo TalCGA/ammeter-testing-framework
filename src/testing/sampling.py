@@ -106,7 +106,17 @@ class SamplingEngine:
                 )
                 break
 
-            current = client.measure()
+            try:
+                current = client.measure()
+            except Exception as exc:
+                logger.error(
+                    "Skipping %s sample %s after measurement failure: %s",
+                    client.name,
+                    index,
+                    exc,
+                )
+                continue
+
             sample_elapsed = time.perf_counter() - start
             samples.append(
                 {

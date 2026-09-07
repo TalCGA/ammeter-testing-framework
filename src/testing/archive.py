@@ -69,7 +69,15 @@ class ResultArchiver:
             "error": error,
         }
 
-    def save_session(self) -> Dict[str, Any]:
+    @property
+    def devices(self) -> Dict[str, Any]:
+        return self._devices
+
+    def save_session(
+        self,
+        comparison: Optional[Dict[str, Any]] = None,
+        plot_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
         if self.session_id is None or self.started_utc is None or self.runs_dir is None:
             raise RuntimeError("Call start_session() before saving a session report.")
 
@@ -95,6 +103,8 @@ class ResultArchiver:
                 "passed": sum(1 for status in statuses.values() if status == "ok"),
                 "failed": sum(1 for status in statuses.values() if status != "ok"),
             },
+            "comparison": comparison or {},
+            "plot_path": plot_path,
             "devices": self._devices,
         }
 

@@ -24,6 +24,8 @@ def print_summary(report: dict) -> None:
     summary = report["execution_summary"]
     print(f"\nSession ID: {report['session_id']}")
     print(f"Archive:    {report['archive_path']}")
+    if report.get("plot_path"):
+        print(f"Plot:       {report['plot_path']}")
     print(
         f"Summary:    {summary['passed']} passed, {summary['failed']} failed "
         f"in {summary['duration_s']:.2f}s"
@@ -35,12 +37,34 @@ def print_summary(report: dict) -> None:
             print(f"  Error:     {device.get('error')}")
             continue
         metrics = device["metrics"]
+        cv = metrics.get("coefficient_of_variation")
+        cv_text = f"{cv:.4f}" if cv is not None else "n/a"
         print(f"  Samples:   {metrics['sample_count']}")
         print(f"  Mean:      {metrics['mean']:.6f} A")
         print(f"  Median:    {metrics['median']:.6f} A")
         print(f"  Std Dev:   {metrics['std_dev']:.6f} A")
         print(f"  Min:       {metrics['min']:.6f} A")
         print(f"  Max:       {metrics['max']:.6f} A")
+        print(f"  CV:        {cv_text}")
+
+    comparison = report.get("comparison") or {}
+    if not comparison:
+        return
+
+    print("\nCross-ammeter comparison:")
+    if comparison.get("note"):
+        print(f"  Note: {comparison['note']}")
+    if comparison.get("most_stable_ammeter"):
+        print(f"  Most stable (lowest CV): {comparison['most_stable_ammeter']}")
+    if comparison.get("reference_mean_a") is not None:
+        print(f"  Reference mean (median of means): {comparison['reference_mean_a']:.6f} A")
+    for pair_name, stats in (comparison.get("pairwise") or {}).items():
+        ratio = stats.get("mean_ratio")
+        ratio_text = f"{ratio:.4f}" if ratio is not None else "n/a"
+        print(
+            f"  {pair_name}: Δmean={stats['mean_difference_a']:.6f} A, "
+            f"ratio={ratio_text}"
+        )
 
 
 def main() -> None:
